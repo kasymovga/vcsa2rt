@@ -202,9 +202,8 @@ def link_entity(db_cnx, parent_object_id, child_object_id):
 	parent_current = get_entity_link_parent(db_cnx, child_object_id)
 	if parent_current == 0:
 		put_row_to_database(db_cnx, "INSERT INTO EntityLink(parent_entity_type, parent_entity_id, child_entity_type, child_entity_id) VALUES ('object', %s, 'object', %s)", [parent_object_id, child_object_id])
-	else:
-		if parent_current != parent_object_id:
-			put_row_to_database(db_cnx, "UPDATE EntityLink SET parent_entity_id=%s WHERE parent_entity_type='object' AND child_entity_type='object' AND child_entity_id=%s", [parent_object_id, child_object_id])
+	elif parent_current != parent_object_id:
+		put_row_to_database(db_cnx, "UPDATE EntityLink SET parent_entity_id=%s WHERE parent_entity_type='object' AND child_entity_type='object' AND child_entity_id=%s", [parent_object_id, child_object_id])
 
 	return
 
