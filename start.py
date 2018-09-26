@@ -14,7 +14,7 @@ import re
 import config
 
 def get_script_path():
-	return os.path.dirname(os.path.realpath(sys.argv[0]))
+	return os.path.dirname(os.path.realpath(__file__))
 
 temp_dir_path = tempfile.mkdtemp()
 script_path = get_script_path()
