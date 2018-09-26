@@ -69,10 +69,7 @@ def remove_if_exist(path):
 
 def csv_to_dicts(csv_path):
 	reader = csv.reader(codecs.open(csv_path, 'rU', 'utf-16'), delimiter=',', quotechar='"')
-	tmp = []
-	for row in reader:
-		tmp.append(row)
-
+	tmp = list(reader)
 	if len(tmp) < 2:
 		return []
 
