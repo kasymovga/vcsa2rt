@@ -1,0 +1,27 @@
+#
+# Настройки
+#
+# Названия аттрибутов для озу и цпу
+ram_attr_str = "ОЗУ, Гб"
+cpu_threads_attr_str = "ЦПУ, Вычислительных потоков"
+hdd_attr_str = "Выделенное дисковое пространство, ГБ"
+#
+# Если cluster_id 0, будет производиться поиск по имени
+cluster_id = 0
+cluster_str = "vmWare"
+#
+# Настройки базы данных
+db_host = '127.0.0.1'
+#db_unix_socket = '/run/mysqld/mysqld.sock'
+db_name = 'racktables'
+db_user = 'rackuser'
+db_password = 'rackpassword'
+#
+# Настройки vCenter
+vcsahost="10.1.2.3.4"
+username="username@domain"
+password="password"
+attribute_tags = [
+	"production_status",
+	"contract"
+]
