@@ -251,9 +251,9 @@ def import_from_vsphere(vm_uuid):
                                       database=config.db_name)
 
 	if (vm_uuid):
-		subprocess.check_call(['powershell', '-File', script_get_vm_list, '-outDir', temp_dir_path, '-vcsahost', config.vcsahost, '-username', config.username, '-password', config.password, '-vmid', vm_uuid])
+		subprocess.check_call(['powershell', ' -ExecutionPolicy', 'Unrestricted', '-File', script_get_vm_list, '-outDir', temp_dir_path, '-vcsahost', config.vcsahost, '-username', config.username, '-password', config.password, '-vmid', vm_uuid])
 	else:
-		subprocess.check_call(['powershell', '-File', script_get_vm_list, '-outDir', temp_dir_path, '-vcsahost', config.vcsahost, '-username', config.username, '-password', config.password])
+		subprocess.check_call(['powershell', ' -ExecutionPolicy', 'Unrestricted', '-File', script_get_vm_list, '-outDir', temp_dir_path, '-vcsahost', config.vcsahost, '-username', config.username, '-password', config.password])
 
 	vms = csv_to_dicts(os.path.join(temp_dir_path, "list.csv"))
 	object_type_chapter_id = get_object_type_chapter_id(cnx)
