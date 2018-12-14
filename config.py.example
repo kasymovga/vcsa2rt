@@ -5,6 +5,7 @@
 ram_attr_str = "ОЗУ, Гб"
 cpu_threads_attr_str = "ЦПУ, Вычислительных потоков"
 hdd_attr_str = "Выделенное дисковое пространство, ГБ"
+report_dir = "C:\\reportdir"
 #
 # Если cluster_id 0, будет производиться поиск по имени
 cluster_id = 0
@@ -25,3 +26,16 @@ attribute_tags = [
 	"production_status",
 	"contract"
 ]
+
+group_tag_category = 'report'
+group_tags = {
+	"report_group": "report_group_descritpion",
+}
+
+mail_server = 'mail.example.com'
+mail_server_port = 25
+mail_login = 'user@example.com'
+mail_password = 'password'
+mail_from = 'user@example.com'
+mail_to = 'to@example.com'
+mail_subject = 'VMs information'

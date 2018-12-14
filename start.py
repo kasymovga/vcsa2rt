@@ -12,6 +12,7 @@ import shutil
 import traceback
 import re
 import config
+import gifvemail
 
 def get_script_path():
 	return os.path.dirname(os.path.realpath(__file__))
@@ -49,9 +50,6 @@ def tag_string_escape(s):
 
 	s = re.sub(r' +', " ", s)
 	return s
-
-def eprint(*args, **kwargs):
-	print(*args, file=sys.stderr, **kwargs)
 
 def ip2num(ip):
 	try:
@@ -243,6 +241,27 @@ def clear_tags(db_cnx, object_id):
 	put_row_to_database(db_cnx, "DELETE FROM TagStorage WHERE entity_id=%s", [object_id])
 	return
 
+def html_report(tables):
+	report = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=windows-1251\"><title></title></head><body>"
+	for table in tables:
+		report += table
+	report += "</table></body></html>"
+	return report
+
+def html_report_table(rows, title):
+	table = "<h2>" + title + "</h2>"
+	table += "<table><tr><th>VM<th>IP<th>RAM<th>HDD<th>CPUs<th>TAGS\n"
+	table += rows
+	table += "</table>"
+	return table
+
+def html_report_row(vm):
+	row = ""
+	row += "<tr><td>" + vm['name'] + "<td>" + ', '.join(vm['ips']) + "\n"
+	row += "<td>" + str(vm['ram']) + "<td>" + str(int(round(float(vm['hdd'].replace(',','.')) - float(vm['ram'].replace(',', '.'))))) + "<td>" + str(vm['cpu_num']) + "\n"
+	row += "<td>" + '; '.join((str(x[1])) for x in vm['tags'])
+	return row
+
 def import_from_vsphere(vm_uuid):
 	cnx = mysql.connector.connect(user=config.db_user,
                                       password=config.db_password,
@@ -295,6 +314,12 @@ def import_from_vsphere(vm_uuid):
 	if cpu_threads_attr_id == 0:
 		raise OSError
 
+	html_report_groups = {}
+	config.report_group_tags['__without_report_group'] = "Without Group"
+	for report_group in config.report_group_tags:
+		html_report_groups[report_group] = ""
+
+	email_msg = ""
 	for row in vms:
 		vm = {}
 		vm['name'] = row['Name']
@@ -344,12 +369,19 @@ def import_from_vsphere(vm_uuid):
 		vm_object_id = get_object_id(cnx, vm_type_id, vm['name'])
 		if get_entity_link_parent(cnx, vm_object_id) != _cluster_id:
 			rename_object(cnx, vm_object_id, vm['name'] + "_renamed_by_script")
-			eprint("VM renamed: " + vm['name'] + " -> " + vm['name'] + "_renamed_by_script")
+			email_msg += "\nVM renamed: " + vm['name'] + " -> " + vm['name'] + "_renamed_by_script"
 			vm_object_id = 0
 
 		if vm_object_id == 0:
 			print("Adding VM to database")
 			vm_object_id = put_object_to_database(cnx, vm_type_id, vm['name'], vm['notes'])
+
+		note_lines = vm['notes'].split('\n')
+		for note_line in note_lines:
+			if note_line[:3] == "IP=":
+				note_ip = note_line[3:]
+				vm['ips'].append(note_line[3:])
+				print("Adding IP from notes: " + note_ip)
 
 		if vm_object_id == 0:
 			#print("ERROR: vm_object_id is 0!")
@@ -383,14 +415,37 @@ def import_from_vsphere(vm_uuid):
 				print("IP address ", ip, " must be assigned")
 			elif not (vm_object_id in ip_object_ids):
 				assign_ip(cnx, vm_object_id, ip)
-				eprint("Warning: other object used ip " + ip);
+				email_msg += "\nWarning: other object used ip " + ip;
 
 		num = 0
 		for mac in vm['macs']:
 			num = num + 1
 			assign_port(cnx, vm_object_id, port_inner_type_id, port_outer_type_id, mac, num)
 
+		report_tag_not_found = True
+		for tag in vm['tags']:
+			if tag[0] == config.report_group_tag_category:
+				report_tag_not_found = False
+				if tag[1] in config.report_group_tags:
+					html_report_groups[tag[1]] += html_report_row(vm)
+
+				break
+
+		if report_tag_not_found:
+			email_msg += "\nVM without report tag: " + vm['name']
+			html_report_groups['__without_report_group'] += html_report_row(vm)
+
 	cnx.close();
+	report = ""
+	for key in html_report_groups:
+		html_report_groups[key] = html_report_table(html_report_groups[key], config.report_group_tags[key])
+
+	report = html_report([html_report_groups[k] for k in html_report_groups])
+	if config.mail_to is not None and config.mail_to != "":
+		gifvemail.sendemail(email_msg)
+
+	with open(os.path.join(config.report_dir, "report.html"), "w") as report_file:
+		report_file.write(report)
 
 vm_uuid = ""
 if len(sys.argv) == 2:
