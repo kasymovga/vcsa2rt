@@ -140,7 +140,11 @@ def put_object_to_database(db_cnx, object_type_id, name, notes):
 	return put_row_to_database_get_id(db_cnx, "INSERT INTO Object(name, label, objtype_id, asset_no, has_problems, comment) VALUES(%s, NULL, %s, NULL, 'no', %s)", [name, object_type_id, notes])
 
 def assign_ip(db_cnx, object_id, ip):
-	return put_row_to_database_get_id(db_cnx, "INSERT INTO IPv4Allocation(object_id, ip, name, type) VALUES(%s, %s, 'generated' , 'regular')", [object_id, ip2num(ip)])
+	ip_num = ip2num(ip)
+	if (ip_num != 0):
+		return put_row_to_database_get_id(db_cnx, "INSERT INTO IPv4Allocation(object_id, ip, name, type) VALUES(%s, %s, 'generated' , 'regular')", [object_id, ip_num])
+	else:
+		return False
 
 def clear_ips(db_cnx, object_id):
 	put_row_to_database(db_cnx, "DELETE FROM IPv4Allocation WHERE object_id=%s", [object_id])
@@ -360,7 +364,7 @@ def import_from_vsphere(vm_uuid):
 		for ip_info_row in ip_info:
 			if len(ip_info_row) > 1:
 				if ip_info_row['IP Address'] != "":
-					ips.append(ip_info_row['IP Address'])
+					ips += ip_info_row['IP Address'].split(' ')
 
 		vm['ips'] = ips
 		#for ip in ips:
@@ -408,6 +412,8 @@ def import_from_vsphere(vm_uuid):
 			assign_tag_as_tag(cnx, 'OS', guestOS, vm_object_id)
 
 		link_entity(cnx, _cluster_id, vm_object_id)
+		vm['ips'] = [ip for ip in vm['ips'] if ip2num(ip) != 0]
+		vm['ips'] = [ip for ip in vm['ips'] if ip[:8] != "169.254."]
 		for ip in vm['ips']:
 			ip_object_ids = check_ip_in_database(cnx, ip)
 			if len(ip_object_ids) == 0:
